@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        main {
+            /* border: 1px solid black; */
+            width: 100%;
+            height: calc(100vh - 1px);
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+        }
+
+        .box-chat {
+            /* border: 1px solid black; */
+            width: 100%;
+            margin-bottom: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow-y: auto;
+            margin-bottom: 50px;
+        }
+
+        .box-msg {
+            /* border: 1px solid black; */
+            display: flex;
+            height: 50px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            padding: 5px;
+        }
+
+        .btnsend {
+            width: 100px;
+        }
+
+        .chat-reply,
+        .chat-own {
+            margin: 5px 0;
+        }
+
+        .chat-reply {
+            margin-bottom: 10px;
+            width: 50%;
+            padding: 5px;
+        }
+
+        .chat-from {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .chat-own {
+            margin-bottom: 10px;
+            width: 50%;
+            margin-left: 50%;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: end;
+        }
+
+        .chat-reply,
+        .chat-own {
+            border: 1px solid rgb(207, 206, 206);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div class="notification" id="notif"></div>
+        <div class="box-chat" id="chatBox"></div>
+        <div class="box-msg">
+            <textarea id="box-text" placeholder="Write a text here"></textarea>
+            <button class="btnsend">send</button>
+        </div>
+    </main>
+
+    <script>
+        (function init() {
+            function sendMessage() {
+                var chatBox = document.getElementById('chatBox');
+                var textArea = document.getElementById('box-text');
+                var messageText = textArea.value.trim();
+
+                if (messageText) {
+                    var newMessage = document.createElement('div');
+                    newMessage.classList.add('chat-own');
+                    newMessage.innerHTML = `
+                        <div class="chat-from">You</div>
+                        <div class="chat-text">${messageText}</div>
+                    `;
+                    chatBox.prepend(newMessage);
+                    textArea.value = '';
+                    chatBox.scrollTop = 0;
+                }
+            }
+
+            function receiveMessage(from, message) {
+                var chatBox = document.getElementById('chatBox');
+                var newMessage = document.createElement('div');
+                newMessage.classList.add('chat-reply');
+                newMessage.innerHTML = `
+                    <div class="chat-from">from : ${from}</div>
+                    <div class="chat-text">${message}</div>
+                `;
+                chatBox.prepend(newMessage);
+                chatBox.scrollTop = 0;
+            }
+
+            window.onload = function () {
+                var chatBox = document.getElementById('chatBox');
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            // websocket
+            var ws;
+            var reconnectInterval = 5000;
+            var isConnect = false;
+            var onlineStatus = document.getElementById("notif")
+            var boxText = document.querySelector("#box-text")
+
+            function connect() {
+                ws = new WebSocket("ws://localhost:9090/ws", "json");
+
+                ws.addEventListener("open", function () {
+                    console.log("open connection...");
+                    isConnect = true;
+                });
+
+                ws.addEventListener("close", function () {
+                    console.log("close connection...");
+                    isConnect = false;
+                    onlineStatus.innerText = "Disconnected \nReconnecting ...";
+                    setTimeout(connect, reconnectInterval); // Attempt to reconnect
+                });
+
+                ws.addEventListener("error", function (e) {
+                    console.log("WebSocket error:", e);
+                    ws.close(); // Close the connection on error to trigger the reconnection logic
+                });
+
+                ws.addEventListener("message", function (e) {
+                    var msg = JSON.parse(e.data);
+                    if (msg.from == "notification") {
+                        onlineStatus.innerText = msg.message + " Online";
+                    } else {
+                        receiveMessage(msg.from, msg.message);
+                    }
+                });
+            }
+            connect();
+
+            document.querySelector(".btnsend").addEventListener("click", function () {
+                ws.send(JSON.stringify({ "message": boxText.value }))
+                sendMessage()
+            })
+        })()
+    </script>
+</body>
+
+</html>
