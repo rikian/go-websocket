@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -31,11 +32,22 @@ type WebSocketMessage struct {
 type PayloadMsg struct {
 	From string `json:"from"`
 	Msg  string `json:"message"`
+	Img  string `json:"img"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// for profile user
+type UserProfile struct {
+	Name string `json:"name"`
+	Img  string `json:"img"`
 }
 
 // to accommodate each user's websocket connection
 type UserConn struct {
 	ID   string
+	Name string
+	Img  string
 	Conn net.Conn
 }
 
@@ -46,15 +58,18 @@ var userConn = struct {
 }{conns: make(map[string]UserConn)}
 
 // to add user connnection to the pool
-func AddUserConn(id string, conn net.Conn) {
+func AddUserConn(id, name, imgName string, conn net.Conn) {
 	userConn.Lock()
 	defer userConn.Unlock()
 
 	userConn.conns[id] = UserConn{
 		ID:   id,
+		Name: name,
+		Img:  imgName,
 		Conn: conn,
 	}
-	fmt.Printf("Added user: %s\n", id)
+
+	fmt.Printf("Added user: %s\n", name)
 }
 
 // to delete user connection from the pool
@@ -131,20 +146,8 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	// tell the user if handshake success
 	socket.Write([]byte(responseHeaders))
 
-	// add user connection to the pool
-	AddUserConn(id, socket)
-
 	// create notification / broadcast message
 	wsMessage := &PayloadMsg{}
-	wsMessage.From = "Server"
-	wsMessage.Msg = id + " join the chat"
-	Notification(false, id, wsMessage)
-	wsMessage.From = "notification"
-	wsMessage.Msg = fmt.Sprintf("%v", len(userConn.conns))
-	Notification(true, "", wsMessage)
-	wsMessage.From = "Server"
-	wsMessage.Msg = "hello from websocket server"
-	socket.Write(parseToBuffer(wsMessage))
 
 	// for ping connection
 	ticker := time.NewTicker(pingPeriod)
@@ -153,8 +156,6 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer socket.Close()
 		for {
-			wsMessage.From = ""
-			wsMessage.Msg = ""
 			select {
 			case <-ticker.C:
 				// we need to add ping connection per period for stable connection
@@ -181,12 +182,47 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 						wsMessage.Msg = "Unsupported message"
 						socket.Write(parseToBuffer(wsMessage))
 					} else {
-						for _, v := range userConn.conns {
-							if v.ID == id {
-								continue
-							} else {
-								wsMessage.From = id
-								v.Conn.Write(parseToBuffer(wsMessage))
+						if wsMessage.From == "auth" {
+							userProfile := &UserProfile{}
+							_ = json.Unmarshal(msg.Payload, userProfile)
+
+							// add user connection to the pool
+							AddUserConn(id, userProfile.Name, userProfile.Img, socket)
+
+							// say hello to the user
+							wsMessage.From = "server"
+							wsMessage.Id = id
+							wsMessage.Img = "img3.png"
+							wsMessage.Msg = fmt.Sprintf("hello %v from websocket server", userConn.conns[id].Name)
+							socket.Write(parseToBuffer(wsMessage))
+
+							// set online notification
+							wsMessage.From = "status"
+							wsMessage.Msg = fmt.Sprintf("%v", len(userConn.conns))
+							Notification(true, "", wsMessage)
+
+							// broadcast if a user has joined to chat
+							wsMessage.From = "server"
+							wsMessage.Img = "img3.png"
+							wsMessage.Msg = userConn.conns[id].Name + " join the chat"
+							Notification(false, id, wsMessage)
+
+							// broadcast add list user
+							for _, v := range userConn.conns {
+								wsMessage.From = "profile-add"
+								wsMessage.Id = v.ID
+								wsMessage.Name = v.Name
+								wsMessage.Img = v.Img
+								wsMessage.Msg = ""
+								Notification(true, "", wsMessage)
+							}
+						} else {
+							for _, v := range userConn.conns {
+								if v.ID == id {
+									continue
+								} else {
+									v.Conn.Write(parseToBuffer(wsMessage))
+								}
 							}
 						}
 					}
@@ -195,11 +231,18 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 				case 0x8: // Connection close
 					fmt.Println("Received close frame")
 					wsMessage.From = "Server"
-					wsMessage.Msg = id + " left the chat"
+					wsMessage.Img = "img3.png"
+					wsMessage.Msg = userConn.conns[id].Name + " left the chat"
 					Notification(false, id, wsMessage)
 					DeleteUserConn(id)
-					wsMessage.From = "notification"
+					wsMessage.From = "status"
 					wsMessage.Msg = fmt.Sprintf("%v", len(userConn.conns))
+					Notification(true, "", wsMessage)
+
+					// broadcast delete user from list
+					wsMessage.From = "profile-delete"
+					wsMessage.Id = id
+					wsMessage.Msg = ""
 					Notification(true, "", wsMessage)
 					return
 				case 0x9: // Ping
@@ -212,6 +255,8 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 				default:
 					fmt.Printf("Received unsupported frame: %d\n", msg.OpCode)
 				}
+
+				wsMessage = &PayloadMsg{}
 			}
 		}
 	}()
@@ -326,7 +371,6 @@ func createPongMessage() []byte {
 }
 
 func main() {
-
 	server := &http.Server{
 		Addr: port,
 	}
@@ -355,6 +399,32 @@ func main() {
 		w.Write(content)
 	})
 
+	http.HandleFunc("/static/img/", func(w http.ResponseWriter, r *http.Request) {
+		filePath := strings.Split(r.URL.Path, "/")
+		fileName := filePath[len(filePath)-1]
+
+		file, err := os.Open("./static/img/" + fileName)
+
+		if err != nil {
+			http.Error(w, "Could not open requested file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		// Read the file content
+		content, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Could not read requested file", http.StatusInternalServerError)
+			return
+		}
+
+		// Set the content type to text/html
+		w.Header().Set("Content-Type", "image/png")
+
+		// Write the content to the response
+		w.Write(content)
+	})
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Upgrade") == "websocket" {
 			handleUpgrade(w, r)
@@ -364,6 +434,7 @@ func main() {
 	})
 
 	log.Printf("Server listening on port %s", port)
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

@@ -17,6 +17,14 @@
             width: 100%;
             height: calc(100vh - 1px);
             display: flex;
+            padding: 5px;
+        }
+
+        .right-side {
+            /* border: 1px solid black; */
+            width: 70%;
+            height: calc(100vh - 1px);
+            display: flex;
             flex-direction: column;
             padding: 5px;
         }
@@ -37,9 +45,10 @@
             display: flex;
             height: 50px;
             position: fixed;
-            bottom: 0;
-            width: 100%;
+            bottom: 5px;
+            width: 70%;
             background-color: white;
+            z-index: 9999;
         }
 
         textarea {
@@ -57,6 +66,15 @@
             margin: 5px 0;
         }
 
+        .img-chat {
+            width: 40px;
+        }
+
+        .profile-chat {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
         .chat-reply {
             margin-bottom: 10px;
             width: 50%;
@@ -65,7 +83,11 @@
 
         .chat-from {
             font-size: 12px;
-            margin-bottom: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-right: 5px;
+            padding-left: 5px;
         }
 
         .chat-own {
@@ -83,21 +105,310 @@
             border: 1px solid rgb(207, 206, 206);
             border-radius: 5px;
         }
+
+        /* left side */
+        .left-side {
+            border: 1px solid rgb(207, 206, 206);
+            border-radius: 5px;
+            width: 30%;
+            height: calc(100vh - 1px);
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+        }
+
+        .notification {
+            border: 1px solid rgb(231, 227, 227);
+            height: 40px;
+            padding: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .list-user {
+            display: flex;
+            flex-direction: column;
+            overflow-y: scroll;
+            height: 100%;
+        }
+
+        .profile-img {
+            /* border: 1px solid black; */
+            padding: 2px;
+            margin-right: 5px;
+        }
+
+        .profile-img img {
+            width: 50px;
+        }
+
+        .list-user .user {
+            border: 1px solid rgb(231, 227, 227);
+            display: flex;
+            padding: 5px;
+            align-items: center;
+            margin-top: 5px;
+            height: 60px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .list-user .user:hover {
+            border: 1px solid blue;
+        }
+
+        #notif-right {
+            display: none;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .left-side {
+                display: none;
+            }
+
+            .right-side {
+                width: 100%;
+            }
+
+            .box-msg {
+                width: 100%;
+            }
+
+            #notif-right {
+                display: flex;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <main>
-        <div class="notification" id="notif"></div>
-        <div class="box-chat" id="chatBox"></div>
-        <div class="box-msg">
-            <textarea id="box-text" placeholder="Write a text here"></textarea>
-            <button class="btnsend">send</button>
+    <div id="profile-section" class="profile-section"
+        style="display: flex; justify-content: center; align-items: center; width: 100%;">
+        <style>
+            .container-add-user {
+                border-radius: 10px;
+                width: 400px;
+                margin: 20px;
+                box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgb(179, 179, 179);
+            }
+
+            .container-add-user img {
+                width: 130px;
+            }
+
+            .header-add-user {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                /* border: 1px solid black; */
+                background-color: rgb(185, 185, 185);
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+
+            .btn-close-add-user {
+                border-radius: 50%;
+                border: none;
+                margin: 5px;
+                height: 30px;
+                width: 30px;
+                font-size: 24px;
+                font-weight: bold;
+                background-color: gray;
+                color: white;
+                cursor: pointer;
+            }
+
+            .btn-close-add-user:hover {
+                background-color: rgb(100, 97, 97);
+                color: white;
+            }
+
+            .body-add-user {
+                padding-top: 5px;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .body-header-add-user {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .img-add-user {
+                padding-bottom: 10px;
+            }
+
+            .btn-ch {
+                width: 90px;
+                height: 30px;
+                border: none;
+                border-radius: 5px;
+                background-color: cornflowerblue;
+                color: white;
+                font-size: 14px;
+                font-weight: 800;
+                cursor: pointer;
+            }
+
+            .btn-ch:hover {
+                background-color: rgb(34, 71, 141);
+            }
+
+            .img-choosen {
+                display: none;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 5px;
+            }
+
+            .img-choosen img {
+                border: 1px solid rgb(227, 229, 232);
+                border-radius: 5px;
+                width: 50px;
+                padding: 5px;
+                cursor: pointer;
+            }
+
+            .btn-ch.avt-close {
+                display: none;
+            }
+
+            .img-choosen img:hover {
+                border: 1px solid rgb(48, 86, 160);
+            }
+
+            .form-add-user {
+                margin-top: 10px;
+                margin-bottom: 25px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .inp-add-user {
+                margin: 3px 0;
+                font-size: 16px;
+                height: 35px;
+                outline: none;
+                padding: 10px;
+                border: 1px solid rgb(227, 229, 232);
+                border-radius: 5px;
+            }
+
+            .inp-add-user:focus {
+                border: 1px solid rgb(48, 86, 160);
+            }
+
+            .footer-add-user {
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid rgb(180, 182, 184);
+            }
+
+            .add-user-save {
+                margin: 10px;
+                height: 40px;
+                font-size: 20px;
+            }
+        </style>
+        <div class="container-add-user">
+            <div class="header-add-user">
+                <button class="btn-close-add-user">X</button>
+            </div>
+            <div class="body-add-user">
+                <div class="body-header-add-user">
+                    <img id="image-user" class="img-add-user" src="/static/img/default.png" alt="">
+                    <div id="img-choosen" class="img-choosen">
+                        <img onclick="changeImage('img1.png')" src="/static/img/img1.png" alt="">
+                        <img onclick="changeImage('img2.png')" src="/static/img/img2.png" alt="">
+                        <img onclick="changeImage('img3.png')" src="/static/img/img3.png" alt="">
+                        <img onclick="changeImage('img4.png')" src="/static/img/img4.png" alt="">
+                        <img onclick="changeImage('img5.png')" src="/static/img/img5.png" alt="">
+                        <img onclick="changeImage('img6.png')" src="/static/img/img6.png" alt="">
+                        <img onclick="changeImage('img7.png')" src="/static/img/img7.png" alt="">
+                        <img onclick="changeImage('img8.png')" src="/static/img/img8.png" alt="">
+                        <img onclick="changeImage('img9.png')" src="/static/img/img9.png" alt="">
+                        <img onclick="changeImage('img10.png')" src="/static/img/img10.png" alt="">
+                        <img onclick="changeImage('img11.png')" src="/static/img/img11.png" alt="">
+                        <img onclick="changeImage('img12.png')" src="/static/img/img12.png" alt="">
+                        <img onclick="changeImage('img13.png')" src="/static/img/img13.png" alt="">
+                        <img onclick="changeImage('img14.png')" src="/static/img/img14.png" alt="">
+                        <img onclick="changeImage('img15.png')" src="/static/img/img15.png" alt="">
+                        <img onclick="changeImage('img16.png')" src="/static/img/img16.png" alt="">
+                        <img onclick="changeImage('img17.png')" src="/static/img/img17.png" alt="">
+                        <img onclick="changeImage('img18.png')" src="/static/img/img18.png" alt="">
+                        <img onclick="changeImage('img19.png')" src="/static/img/img19.png" alt="">
+                        <img onclick="changeImage('img20.png')" src="/static/img/img20.png" alt="">
+                        <img onclick="changeImage('img21.png')" src="/static/img/img21.png" alt="">
+                        <img onclick="changeImage('img22.png')" src="/static/img/img22.png" alt="">
+                        <img onclick="changeImage('img23.png')" src="/static/img/img23.png" alt="">
+                        <img onclick="changeImage('img24.png')" src="/static/img/img24.png" alt="">
+                    </div>
+                    <button id="open-img-choosen" class="btn-ch avt-open">Pilih Image</button>
+                    <button id="close-img-choosen" class="btn-ch avt-close">Tutup Image</button>
+                    <script>
+                        var imgChoosen = document.querySelector("#img-choosen")
+                        var openImgChoosen = document.querySelector("#open-img-choosen")
+                        var closeImgChoosen = document.querySelector("#close-img-choosen")
+                        var imageUser = document.querySelector("#image-user")
+
+                        openImgChoosen.addEventListener("click", function () {
+                            imgChoosen.style.display = "flex"
+                            closeImgChoosen.style.display = "block"
+                            openImgChoosen.style.display = "none"
+                        })
+                        closeImgChoosen.addEventListener("click", function () {
+                            imgChoosen.style.display = "none"
+                            closeImgChoosen.style.display = "none"
+                            openImgChoosen.style.display = ""
+                        })
+
+                        function changeImage(id) {
+                            imageUser.src = "/static/img/" + id
+                        }
+
+                    </script>
+                </div>
+                <form class="form-add-user">
+                    <input id="user-name-p" class="inp-add-user" type="text" placeholder="User Name">
+                </form>
+            </div>
+            <div class="footer-add-user">
+                <button id="btn-save-profile" class="btn-ch add-user-save">Save</button>
+            </div>
         </div>
+    </div>
+
+    <main id="main" style="display: none;">
+        <div class="left-side">
+            <div class="notification" id="notif-left">1 online</div>
+
+            <div class="list-user" id="list-user"></div>
+        </div>
+
+        <div class="right-side">
+            <div class="notification" id="notif-right">1 online</div>
+            <div class="box-msg">
+                <textarea id="box-text" placeholder="Write a text here"></textarea>
+                <button class="btnsend">send</button>
+            </div>
+            <div class="box-chat" id="chatBox"></div>
+        </div>
+
     </main>
 
     <script>
         (function init() {
+            var listUser = document.getElementById("list-user")
+            var isNeedRegis = true
+            var name, imgUser, nameImgUser
+            var myId;
+
             function sendMessage() {
                 var chatBox = document.getElementById('chatBox');
                 var textArea = document.getElementById('box-text');
@@ -107,7 +418,10 @@
                     var newMessage = document.createElement('div');
                     newMessage.classList.add('chat-own');
                     newMessage.innerHTML = `
-                        <div class="chat-from">You</div>
+                        <div class="profile-chat">
+                            <div class="chat-from">You</div>
+                            <img class="img-chat" src="/static/img/${nameImgUser}" alt="">
+                        </div>
                         <div class="chat-text">${messageText}</div>
                     `;
                     chatBox.prepend(newMessage);
@@ -116,12 +430,16 @@
                 }
             }
 
-            function receiveMessage(from, message) {
+            function receiveMessage(from, message, img) {
+                if (!message) return
                 var chatBox = document.getElementById('chatBox');
                 var newMessage = document.createElement('div');
                 newMessage.classList.add('chat-reply');
                 newMessage.innerHTML = `
-                    <div class="chat-from">from : ${from}</div>
+                    <div class="profile-chat">
+                        <img class="img-chat" src="/static/img/${img}" alt="">
+                        <div class="chat-from">from : ${from}</div>
+                    </div>
                     <div class="chat-text">${message}</div>
                 `;
                 chatBox.prepend(newMessage);
@@ -133,11 +451,43 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
 
+            function cEl(elm, cls, id, src) {
+                var element = document.createElement(elm)
+                element.setAttribute("class", cls)
+                element.setAttribute("id", id)
+
+                if (elm == "img") {
+                    element.src = "/static/img/" + src
+                }
+
+                return element
+            }
+
+            function createActiveUser(p) {
+                var user = cEl("div", "user", p.id, "")
+                var profileImg = cEl("div", "profile-img", "", "")
+                var imgUser = cEl("img", "", "", p.img)
+                profileImg.appendChild(imgUser)
+                var profileName = cEl("div", "profile-name", "", "")
+                profileName.innerText = p.name
+
+                user.appendChild(profileImg)
+                user.appendChild(profileName)
+
+                return user
+            }
+
+            function addListUser(p) {
+                var user = createActiveUser(p)
+                listUser.appendChild(user)
+            }
+
             // websocket
             var ws;
             var reconnectInterval = 5000;
             var isConnect = false;
-            var onlineStatus = document.getElementById("notif")
+            var onlineStatus1 = document.getElementById("notif-left")
+            var onlineStatus2 = document.getElementById("notif-right")
             var boxText = document.querySelector("#box-text")
 
             function connect() {
@@ -145,13 +495,30 @@
 
                 ws.addEventListener("open", function () {
                     console.log("open connection...");
-                    isConnect = true;
+                    // send information abaut the user to server
+                    ws.send(JSON.stringify({
+                        "from": "auth",
+                        "name": name,
+                        "img": nameImgUser
+                    }))
+
+                    if (myId) {
+                        for (var i = 0; i < listUser.children.length; i++) {
+                            // delete if user id exist
+                            if (listUser.children[i].id == myId) {
+                                listUser.children[i].remove()
+                                return
+                            }
+                        }
+                        return
+                    }
                 });
 
                 ws.addEventListener("close", function () {
                     console.log("close connection...");
                     isConnect = false;
-                    onlineStatus.innerText = "Disconnected \nReconnecting ...";
+                    onlineStatus1.innerText = "Disconnected\nReconnecting ...";
+                    onlineStatus2.innerText = "Disconnected\nReconnecting ...";
                     setTimeout(connect, reconnectInterval); // Attempt to reconnect
                 });
 
@@ -162,18 +529,82 @@
 
                 ws.addEventListener("message", function (e) {
                     var msg = JSON.parse(e.data);
-                    if (msg.from == "notification") {
-                        onlineStatus.innerText = msg.message + " Online";
-                    } else {
-                        receiveMessage(msg.from, msg.message);
+
+                    // wait for auth
+                    if (msg.from == "server") {
+                        if (isNeedRegis) {
+                            document.getElementById("profile-section").style.display = "none"
+                            document.getElementById("main").style.display = "flex"
+                            isNeedRegis = false
+                        }
+
+                        receiveMessage(msg.from, msg.message, msg.img);
+                        isConnect = true;
+                        myId = msg.id
+                        myImg = msg.img
+                        return
                     }
+
+                    // update list user
+                    if (msg.from == "profile-add") {
+                        for (var i = 0; i < listUser.children.length; i++) {
+                            // check user id exist or not
+                            if (listUser.children[i].id == msg.id) {
+                                return
+                            }
+                        }
+
+                        var user = createActiveUser(msg)
+                        listUser.appendChild(user)
+                        return
+                    }
+
+                    if (msg.from == "profile-delete") {
+                        for (var i = 0; i < listUser.children.length; i++) {
+                            // delete if user id exist
+                            if (listUser.children[i].id == msg.id) {
+                                listUser.children[i].remove()
+                                return
+                            }
+                        }
+                        return
+                    }
+
+                    if (msg.from == "status") {
+                        onlineStatus1.innerText = msg.message + " Online";
+                        onlineStatus2.innerText = msg.message + " Online";
+                        return
+                    }
+
+                    receiveMessage(msg.from, msg.message, msg.img);
                 });
             }
-            connect();
 
             document.querySelector(".btnsend").addEventListener("click", function () {
-                ws.send(JSON.stringify({ "message": boxText.value }))
-                sendMessage()
+                if (isConnect) {
+                    ws.send(JSON.stringify({
+                        "message": boxText.value,
+                        "img": nameImgUser,
+                        "from": name
+                    }))
+                    sendMessage()
+                } else {
+                    alert("you currenly offline ...")
+                }
+            })
+
+            document.getElementById("btn-save-profile").addEventListener("click", function () {
+                var imgElm = document.getElementById("image-user")
+
+                name = document.getElementById("user-name-p").value.trim()
+                imgUser = imgElm.src.split("/")
+                nameImgUser = imgUser[imgUser.length - 1]
+
+                if (name.length < 6 || name.length > 16) {
+                    return alert("user name must be more than 6 and less than 16 charcter")
+                }
+
+                connect()
             })
         })()
     </script>

@@ -5,3 +5,5 @@
 go mod tidy
 go run main.go
 ```
+
+## https://rikianfaisal.my.id
